@@ -1,5 +1,6 @@
 import os
 import io
+import json
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaIoBaseDownload
@@ -11,14 +12,19 @@ CREDENTIALS_FILE = 'credentials.json'
 FOLDER_ID = '11kZr6lwqHUzofr37mTd-noucxwunmIr8'
 
 def conectar_drive():
-    """Conecta con la API de Google Drive usando la cuenta de servicio."""
+    """Conecta con la API de Google Drive usando archivo local o variable de entorno."""
     try:
-        if not os.path.exists(CREDENTIALS_FILE):
-            print("Aviso: No se encontró el archivo credentials.json")
+        # Si existe la variable de entorno en Vercel, la usamos directamente
+        if os.environ.get("GOOGLE_CREDENTIALS_JSON"):
+            creds_dict = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON"))
+            creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        elif os.path.exists(CREDENTIALS_FILE):
+            # Si estamos en local y existe el archivo json
+            creds = service_account.Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
+        else:
+            print("Aviso: No se encontraron credenciales de Google Drive.")
             return None
-        creds = service_account.Credentials.from_service_account_file(
-            CREDENTIALS_FILE, scopes=SCOPES
-        )
+            
         service = build('drive', 'v3', credentials=creds)
         return service
     except Exception as e:

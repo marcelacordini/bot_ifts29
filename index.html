@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Campus Virtual - IFTS N.° 29</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f9; color: #333; }
+        
+        /* Barra superior Moodle */
+        .moodle-top-bar { background: #222; color: #fff; padding: 8px 20px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .moodle-header { background: #ffffff; border-bottom: 1px solid #ddd; padding: 15px 30px; display: flex; align-items: center; justify-content: space-between; }
+        .moodle-header img { height: 40px; }
+        .banner-curso { background: linear-gradient(135deg, #0077b6, #00b4d8); color: white; padding: 25px 30px; border-radius: 6px; margin: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .banner-curso h1 { margin: 0 0 10px 0; font-size: 22px; }
+        .banner-curso p { margin: 0; font-size: 14px; opacity: 0.9; }
+
+        /* Contenido del aula */
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+        .section-box { background: white; padding: 20px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .section-box h3 { margin-top: 0; color: #0077b6; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .grid-blocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
+        .moodle-card { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; text-align: center; font-size: 13px; font-weight: bold; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        /* Widget Flotante del Bot AppMinds */
+        .chat-widget-btn { position: fixed; bottom: 20px; right: 20px; background: #0077b6; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-size: 15px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; display: flex; align-items: center; gap: 8px; }
+        .chat-container { position: fixed; bottom: 80px; right: 20px; width: 360px; background: white; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 1000; overflow: hidden; border: 1px solid #cbd5e1; }
+        .chat-header { background: #0077b6; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .chat-header button { background: none; border: none; color: white; font-size: 16px; cursor: pointer; }
+        .chat-messages { height: 280px; overflow-y: auto; padding: 12px; background: #fafafa; font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
+        .bot { color: #0288d1; background: #e1f5fe; padding: 8px 12px; border-radius: 8px; max-width: 80%; }
+        .user { color: #1b5e20; background: #e8f5e9; padding: 8px 12px; border-radius: 8px; max-width: 80%; align-self: flex-end; text-align: right; }
+        .chat-input-area { padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 5px; background: #fff; }
+        .chat-input-area input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .chat-input-area button { padding: 8px 12px; background: #0077b6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .options-container { padding: 8px; background: #f8fafc; display: flex; flex-wrap: wrap; gap: 4px; border-top: 1px solid #eee; }
+        .option-btn { background: #e0f2fe; border: 1px solid #bae6fd; color: #0369a1; padding: 5px 8px; cursor: pointer; border-radius: 4px; font-size: 11px; }
+
+        /* Pie de página Moodle */
+        .moodle-footer { background: #212529; color: #adb5bd; padding: 30px 20px; text-align: center; font-size: 12px; margin-top: 40px; }
+        .moodle-footer img { height: 30px; margin-bottom: 10px; filter: brightness(0) invert(1); }
+    </style>
+</head>
+<body>
+
+    <!-- Barra de Navegación Moodle -->
+    <div class="moodle-top-bar">
+        <span>IFTS N.° 29 | Campus Virtual</span>
+        <span>Usuario: Ingresante (Invitado)</span>
+    </div>
+    
+    <div class="moodle-header">
+        <strong>IFTS N.° 29 — Ministerio de Educación</strong>
+        <span>Área de Soporte y Familiarización</span>
+    </div>
+
+    <!-- Banner del Curso (Práctica Profesionalizante IV) -->
+    <div class="container">
+        <div class="banner-curso">
+            <h1>Tecnicatura Superior en Desarrollo de Software a Distancia</h1>
+            
+        </div>
+
+        <!-- Contenido Central del Aula -->
+        <div class="section-box">
+            <h3>Curso de Familiarización y Primeros Pasos</h3>
+            <p>Bienvenido al espacio institucional de ambientación para ingresantes. Aquí encontrarás las herramientas, cronogramas y canales de asistencia para iniciar tu cursada con éxito.</p>
+            
+            <div class="grid-blocks">
+                <div class="moodle-card">📚 Materias 1° Año</div>
+                <div class="moodle-card">🕒 Horarios y Comisiones</div>
+                <div class="moodle-card">📄 Programas y PDFs</div>
+                <div class="moodle-card">❓ Preguntas Frecuentes</div>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h3>Avisos y Novedades Institucionales</h3>
+            <p>• Recordatorio: Recuerden verificar sus comisiones asignadas antes del inicio de las actividades sincrónicas.</p>
+            <p>• Soporte Técnico: Ante cualquier inconveniente con el campus, utilicen el asistente virtual de la esquina inferior derecha.</p>
+        </div>
+    </div>
+
+    <!-- Widget Flotante de AppMinds -->
+    <button class="chat-widget-btn" onclick="toggleChat()">
+        💬 Asistente AppMinds
+    </button>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <span>Asistente Virtual AppMinds</span>
+            <button onclick="toggleChat()">✕</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="bot"><b>Bot:</b> ¡Hola! Soy el asistente virtual de AppMinds para ingresantes del IFTS 29. ¿Qué información necesitas consultar?</div>
+        </div>
+        <div class="options-container" id="options-box">
+            <button class="option-btn" onclick="enviarMensaje('📚 Materias')">📚 Materias</button>
+            <button class="option-btn" onclick="enviarMensaje('🕒 Horarios y Comisiones')">🕒 Horarios y Comisiones</button>
+            <button class="option-btn" onclick="enviarMensaje('❓ Preguntas Frecuentes')">❓ Preguntas Frecuentes</button>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="Escribe tu consulta..." onkeypress="handleKeyPress(event)">
+            <button onclick="enviarMensaje()">Enviar</button>
+        </div>
+    </div>
+
+    <!-- Pie de Página Moodle -->
+    <div class="moodle-footer">
+        <p>Gobierno de la Ciudad Autónoma de Buenos Aires — Agencia de Habilidades para el Futuro</p>
+        <p>Buenos Aires Ciudad</p>
+    </div>
+
+    <script>
+        function toggleChat() {
+            const chat = document.getElementById('chatContainer');
+            chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                enviarMensaje();
+            }
+        }
+
+        async function enviarMensaje(textoFijo = null) {
+            const input = document.getElementById('user-input');
+            const mensaje = textoFijo || input.value;
+            if (!mensaje.trim()) return;
+
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML += `<div class="user"><b>Tú:</b> ${mensaje}</div>`;
+            if(!textoFijo) input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mensaje: mensaje })
+                });
+
+                const data = await response.json();
+                chatMessages.innerHTML += `<div class="bot"><b>Bot:</b> ${data.respuesta}</div>`;
+                
+                const optionsBox = document.getElementById('options-box');
+                optionsBox.innerHTML = '';
+                if (data.opciones && data.opciones.length > 0) {
+                    data.opciones.forEach(opcion => {
+                        optionsBox.innerHTML += `<button class="option-btn" onclick="enviarMensaje('${opcion}')">${opcion}</button>`;
+                    });
+                }
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (error) {
+                chatMessages.innerHTML += `<div class="bot" style="color:red;"><b>Error:</b> No se pudo conectar con el backend de Python.</div>`;
+            }
+        }
+    </script>
+
+</body>
+</html>

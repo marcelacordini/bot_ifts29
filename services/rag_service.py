@@ -93,7 +93,24 @@ def buscar_en_pdf_rag(pregunta: str, materia: str = None, comision: str = None):
                 True
             )
 
-        # 2. CASO CONSULTAS GENERALES / FAQ (Aula virtual, horarios, comisiones, inscripción)
+        # 2. CASO PREGUNTAS FRECUENTES (Para que devuelva el PDF oficial con el botón estilizado)
+        if any(term in p_lower for term in ["preguntas frecuentes", "faq", "informacion oficial", "información oficial"]):
+            for file in files:
+                if "informacion_oficial" in file['name'].lower() or "ifts29" in file['name'].lower():
+                    link = file.get('webViewLink', '#')
+                    nombre = file['name']
+                    respuesta = f"""
+                    <div style="background-color: #f0f4f8; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; margin: 8px 0;">
+                        <p style="margin: 0 0 8px 0; font-weight: bold; color: #0369a1;">📄 Documento Oficial Disponible</p>
+                        <p style="margin: 0 0 10px 0; font-size: 0.95em; color: #334155;">{nombre}</p>
+                        <a href="{link}" target="_blank" style="background-color: #0284c7; color: white; padding: 8px 14px; text-decoration: none; border-radius: 4px; font-size: 0.9em; display: inline-block; font-weight: 500;">
+                            📥 Ver / Descargar PDF
+                        </a>
+                    </div>
+                    """
+                    return respuesta, False
+
+        # 3. CASO CONSULTAS GENERALES / FAQ (Aula virtual, horarios, comisiones, inscripción)
         if any(term in p_lower for term in ["aula", "virtual", "campus", "inscripción", "examen", "bedelía", "ayuda", "horario", "comision", "comisión", "cursada"]):
             for file in files:
                 if "informacion_oficial" in file['name'].lower() or "faq" in file['name'].lower():
@@ -111,7 +128,7 @@ def buscar_en_pdf_rag(pregunta: str, materia: str = None, comision: str = None):
                     
                     return "🕒 **Horarios Generales:** Las cursadas se desarrollan de lunes a jueves en el turno nocturno (de 19:00 a 21:00 hs) divididas en Comisión A y Comisión B.", False
 
-        # 3. CASO BÚSQUEDA DE ARCHIVOS PARA DESCARGAR (Programas, Plan, Documentación)
+        # 4. CASO BÚSQUEDA DE ARCHIVOS PARA DESCARGAR (Programas, Plan, Documentación)
         archivo_buscado = ""
         if "programa" in p_lower or "base de datos" in p_lower or "abd" in p_lower:
             archivo_buscado = "base_de_datos"

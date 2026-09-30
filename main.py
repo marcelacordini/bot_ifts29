@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from fastapi.responses import HTMLResponse
+import os
 
 from services.rag_service import buscar_respuesta_rag
 from services.rag_service import buscar_en_pdf_rag
@@ -28,19 +30,23 @@ class ConsultaRequest(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    """Sirve la interfaz gráfica del chat si existe index.html, o un mensaje de bienvenida si prefieres."""
-    if os.path.exists("index.html"):
-        with open("index.html", "r", encoding="utf-8") as f:
+    """Sirve la interfaz gráfica del chat leyendo el index.html de forma segura."""
+    try:
+        # Obtiene la ruta de la carpeta actual donde está main.py
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(current_dir, "index.html")
+        
+        with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
-    return """
-    <html>
-        <head><title>Asistente IFTS 29</title></head>
-        <body style="font-family: Arial; text-align: center; margin-top: 50px;">
-            <h2>🤖 API del Asistente Virtual IFTS N.° 29 Activa</h2>
-            <p>El backend modular con FastAPI y RAG está funcionando correctamente.</p>
-        </body>
-    </html>
-    """
+    except Exception as e:
+        return f"""
+        <html>
+            <body style="font-family: Arial; padding: 20px;">
+                <h3>⚠️ Error cargando la interfaz gráfica</h3>
+                <p>Detalle: {str(e)}</p>
+            </body>
+        </html>
+        """
 
 @app.post("/api/chat")
 def procesar_chat(request: ConsultaRequest):

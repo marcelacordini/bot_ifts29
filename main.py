@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from services.rag_service import buscar_respuesta_rag
@@ -25,14 +26,21 @@ class ConsultaRequest(BaseModel):
     mensaje: str
     comision: str = "General"
 
-@app.get("/")
-def health_check():
-    return {
-        "status": "activo",
-        "empresa": "AppMinds",
-        "proyecto": "Asistente Virtual IFTS 29",
-        "arquitectura": "FastAPI / RAG modular"
-    }
+@app.get("/", response_class=HTMLResponse)
+def home():
+    """Sirve la interfaz gráfica del chat si existe index.html, o un mensaje de bienvenida si prefieres."""
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return """
+    <html>
+        <head><title>Asistente IFTS 29</title></head>
+        <body style="font-family: Arial; text-align: center; margin-top: 50px;">
+            <h2>🤖 API del Asistente Virtual IFTS N.° 29 Activa</h2>
+            <p>El backend modular con FastAPI y RAG está funcionando correctamente.</p>
+        </body>
+    </html>
+    """
 
 @app.post("/api/chat")
 def procesar_chat(request: ConsultaRequest):

@@ -57,7 +57,7 @@ def buscar_en_pdf_rag(pregunta: str):
     """Maneja la entrega de archivos oficiales y responde consultas escritas por teclado."""
     p_lower = pregunta.lower()
 
-    # --- 1. DETECTAR PROGRAMAS Y CRONOGRAMAS (Con los códigos 111 a 114) ---
+    # --- 1. DETECTAR PROGRAMAS Y CRONOGRAMAS ---
     codigo_detectado = None
     if "base de datos" in p_lower or "112" in p_lower or "administración" in p_lower:
         codigo_detectado = "112"
@@ -74,33 +74,58 @@ def buscar_en_pdf_rag(pregunta: str):
             return obtener_link_archivo_drive(f"{codigo_detectado}_{tipo_doc}"), False
 
     # Plan de estudios y carrera
-    if "plan de estudios" in p_lower or "ver el plan" in p_lower or "duración" in p_lower or "validez" in p_lower:
+    if "plan de estudios" in p_lower or "ver el plan" in p_lower or "duración" in p_lower or "validez" in p_lower or "titulo" in p_lower:
         return obtener_link_archivo_drive("plan"), False
 
-    # --- 2. BASE DE CONOCIMIENTO (Para preguntas escritas libremente por teclado) ---
+    # --- 2. BASE DE CONOCIMIENTO AMPLIADA (Cubre todos los temas y sinónimos) ---
     base_conocimiento = {
-        "curso de ingreso": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
-        "familiarización": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
-        "campus": "En la plataforma Moodle encontrarás el aula principal asignada a tu comisión. Cada semana se habilitan los módulos correspondientes con materiales de lectura obligatoria, foros de intercambio académico y actividades evaluables.",
-        "moodle": "En la plataforma Moodle encontrarás el aula principal asignada a tu comisión. Cada semana se habilitan los módulos correspondientes con materiales de lectura obligatoria, foros de intercambio académico y actividades evaluables.",
+        # Materias y Plan
+        "materias": "Las materias de primer año de la tecnicatura son: Administración de Base de Datos (1.1.2), Técnicas de Programación (1.1.1), Elementos de Análisis Matemático (1.1.3) y Lógica Computacional (1.1.4).",
+        "asignaturas": "Las materias de primer año de la tecnicatura son: Administración de Base de Datos (1.1.2), Técnicas de Programación (1.1.1), Elementos de Análisis Matemático (1.1.3) y Lógica Computacional (1.1.4).",
+        "correlatividades": "Para cursar las asignaturas de segundo año es requisito obligatorio haber regularizado las correlativas de primer año; y para rendir los exámenes finales, se debe tener la materia aprobada según el plan de estudios vigente.",
+        
+        # Primeros pasos y Moodle
+        "curso de ingreso": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales.",
+        "familiarización": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus y los cronogramas de cursada.",
+        "campus": "En la plataforma Moodle encontrarás el aula principal asignada a tu comisión. Cada semana se habilitan los módulos correspondientes con materiales de lectura obligatoria, foros de intercambio y actividades evaluables.",
+        "moodle": "En la plataforma Moodle encontrarás el aula principal asignada a tu comisión. Cada semana se habilitan los módulos correspondientes con materiales de lectura obligatoria, foros de intercambio y actividades evaluables.",
         "materiales": "Disponés de guías de lectura rápida, tutoriales de acceso y el programa introductorio en la sección del 'Curso de Familiarización y Primeros Pasos' dentro de tu aula virtual.",
+        "arrancar": "Disponés de guías de lectura rápida, tutoriales de acceso y el programa introductorio en la sección del 'Curso de Familiarización y Primeros Pasos' dentro de tu aula virtual.",
+        
+        # Docentes y Comisiones
         "docentes": "Podés establecer contacto con el equipo docente a través de la mensajería interna del campus Moodle o utilizando los foros de consultas generales habilitados en cada materia.",
+        "profesores": "Podés establecer contacto con el equipo docente a través de la mensajería interna del campus Moodle o utilizando los foros de consultas generales habilitados en cada materia.",
         "comisión": "Para conocer tu comisión, ingresá a la sección de tu perfil en el campus Moodle o consultá el padrón oficial de ingresantes publicado en la cartelera digital institucional.",
+        "comisiones": "Para conocer tu comisión, ingresá a la sección de tu perfil en el campus Moodle o consultá el padrón oficial de ingresantes publicado en la cartelera digital institucional.",
+        
+        # Asistencia y Entregas
         "asistencia": "La tecnicatura a distancia exige un mínimo del 75% de participación y asistencia a las actividades sincrónicas obligatorias y la aprobación de las entregas de trabajos prácticos.",
         "faltas": "Las inasistencias a instancias obligatorias deben justificarse formalmente presentando certificado médico o laboral ante Bedelía dentro de las 48 horas hábiles posteriores al hecho.",
-        "actividades pendientes": "Las entregas fuera de término deben coordinarse directamente con el docente a cargo de la comisión y están sujetas al régimen de evaluación y plazos establecidos en la materia.",
+        "inasistencias": "Las inasistencias a instancias obligatorias deben justificarse formalmente presentando certificado médico o laboral ante Bedelía dentro de las 48 horas hábiles posteriores al hecho.",
+        "trabajos prácticos": "Las entregas fuera de término deben coordinarse directamente con el docente a cargo de la comisión y están sujetas al régimen de evaluación y plazos establecidos en la materia.",
+        "entregas": "Las entregas fuera de término deben coordinarse directamente con el docente a cargo de la comisión y están sujetas al régimen de evaluación y plazos establecidos en la materia.",
         "alumno regular": "Se mantiene cumpliendo con el porcentaje mínimo de asistencia, aprobando los trabajos prácticos obligatorios y rindiendo las instancias parciales o coloquios en las fechas del calendario académico.",
-        "correlatividades": "Para cursar las asignaturas de segundo año es requisito obligatorio haber regularizado las correlativas de primer año; y para rendir los exámenes finales, se debe tener la materia aprobada según el plan de estudios vigente.",
-        "certificado": "El certificado se solicita de manera digital ingresando a la plataforma SIU Guaraní en la sección 'Trámites > Certificados', el cual se emite automáticamente con firma digital válida.",
+        "regularidad": "Se mantiene cumpliendo con el porcentaje mínimo de asistencia, aprobando los trabajos prácticos obligatorios y rindiendo las instancias parciales o coloquios en las fechas del calendario académico.",
+        
+        # Trámites y SIU Guaraní
+        "certificado": "El certificado de alumno regular se solicita de manera digital ingresando a la plataforma SIU Guaraní en la sección 'Trámites > Certificados', el cual se emite automáticamente con firma digital válida.",
+        "alumno regular": "El certificado de alumno regular se solicita de manera digital ingresando a la plataforma SIU Guaraní en la sección 'Trámites > Certificados', el cual se emite automáticamente con firma digital válida.",
         "inscripción": "Todas las inscripciones a materias, promociones y mesas de exámenes finales se gestionan exclusivamente a través del sistema SIU Guaraní dentro de los plazos del calendario académico.",
-        "datos personales": "La modificación de datos de contacto se realiza ingresando a la configuración de tu perfil en SIU Guaraní o enviando una solicitud formal al área de Bedelía.",
+        "inscribirme": "Todas las inscripciones a materias, promociones y mesas de exámenes finales se gestionan exclusivamente a través del sistema SIU Guaraní dentro de los plazos del calendario académico.",
+        "datos personales": "La modificación de datos de contacto o correo electrónico se realiza ingresando a la configuración de tu perfil en SIU Guaraní o enviando una solicitud formal al área de Bedelía.",
+        "mail": "La modificación de datos de contacto o correo electrónico se realiza ingresando a la configuración de tu perfil en SIU Guaraní o enviando una solicitud formal al área de Bedelía.",
         "calendario": "El cronograma completo con fechas de inicio de cuatrimestre, periodos de inscripción, recesos y mesas de exámenes está publicado en la sección de normativas de la web institucional.",
+        
+        # Ayuda técnica
         "requisitos": "Se recomienda contar con una computadora (PC o notebook) con sistema operativo actualizado, navegador web moderno y una conexión a internet estable. Para las prácticas de programación se indicarán los entornos específicos en cada materia.",
+        "pc": "Se recomienda contar con una computadora (PC o notebook) con sistema operativo actualizado, navegador web moderno y una conexión a internet estable.",
+        "celular": "Se recomienda contar con una computadora (PC o notebook) para seguir las clases y realizar las prácticas de programación de forma óptima.",
         "problemas de conexión": "Si experimentás inconvenientes técnicos durante una evaluación sincrónica, debés tomar una captura de pantalla como evidencia (con fecha y hora) y reportarlo de inmediato a soporte técnico y a tu docente por correo.",
+        "examen": "Si experimentás inconvenientes técnicos durante una evaluación sincrónica, debés tomar una captura de pantalla como evidencia y reportarlo de inmediato a soporte técnico y a tu docente.",
         "diferencia": "Las consultas académicas (contenidos, bibliografía, notas) se resuelven con profesores o tutores. Las cuestiones administrativas (certificados, pases, analíticos, SIU Guaraní) se canalizan exclusivamente con Bedelía."
     }
 
-    # Evaluamos si alguna de las palabras clave de las preguntas escritas coincide con el mensaje del usuario
+    # Recorremos el diccionario para hacer match con cualquier tema ingresado
     for clave, respuesta in base_conocimiento.items():
         if clave in p_lower:
             return respuesta, False

@@ -33,12 +33,10 @@ def obtener_link_archivo_drive(nombre_buscado: str):
         results = service.files().list(q=query, pageSize=50, fields="files(id, name, webViewLink)").execute()
         files = results.get('files', [])
 
-        # Dividimos el término buscado (ej: "111_Cronograma" -> ["111", "cronograma"])
         partes_busqueda = nombre_buscado.lower().split("_")
 
         for file in files:
             nombre_archivo = file['name'].lower()
-            # Validamos que el archivo contenga todas las partes necesarias (ej: contenga '111' y 'cronograma')
             if all(parte in nombre_archivo for parte in partes_busqueda):
                 link = file.get('webViewLink', '#')
                 nombre = file['name']
@@ -56,46 +54,30 @@ def obtener_link_archivo_drive(nombre_buscado: str):
         return f"Error al buscar el archivo: {e}"
 
 def buscar_en_pdf_rag(pregunta: str):
-    """Maneja la entrega de archivos oficiales cruzando materia y tipo de documento."""
+    """Maneja la entrega de archivos oficiales y responde consultas escritas por teclado."""
     p_lower = pregunta.lower()
 
-    # --- 1. DETECTAR MATERIA Y DOCUMENTO (Programa o Cronograma) ---
-    codigos_materias = {
-        "técnicas de programación": "111", "programacion": "111", "111": "111",
-        "administración de base de datos": "112", "base de datos": "112", "112": "112",
-        "elementos de análisis matemático": "113", "matemático": "113", "113": "113",
-        "lógica computacional": "114", "lógica": "114", "114": "114"
-    }
-
+    # --- 1. DETECTAR PROGRAMAS Y CRONOGRAMAS (Con los códigos 111 a 114) ---
     codigo_detectado = None
-    for nombre_mat, codigo in codigos_materias.items():
-        if nombre_mat in p_lower:
-            codigo_detectado = codigo
-            break
+    if "base de datos" in p_lower or "112" in p_lower or "administración" in p_lower:
+        codigo_detectado = "112"
+    elif "programación" in p_lower or "111" in p_lower or "técnicas" in p_lower:
+        codigo_detectado = "111"
+    elif "matemático" in p_lower or "113" in p_lower or "análisis" in p_lower:
+        codigo_detectado = "113"
+    elif "lógica" in p_lower or "114" in p_lower:
+        codigo_detectado = "114"
 
-    # Si se pide programa o cronograma Y detectamos una materia (o el usuario viene interactuando)
     if "programa" in p_lower or "cronograma" in p_lower or "horarios" in p_lower or "días" in p_lower:
-        # Si no detectó la materia explícitamente en el último mensaje, podemos buscar por palabra clave general en Drive
         tipo_doc = "Programa" if "programa" in p_lower else "Cronograma"
-        
         if codigo_detectado:
             return obtener_link_archivo_drive(f"{codigo_detectado}_{tipo_doc}"), False
-        else:
-            # Búsqueda comodín si el mensaje anterior era de materia pero el actual solo pide el cronograma
-            if "base de datos" in p_lower or "112" in p_lower:
-                return obtener_link_archivo_drive(f"112_{tipo_doc}"), False
-            elif "programación" in p_lower or "111" in p_lower:
-                return obtener_link_archivo_drive(f"111_{tipo_doc}"), False
-            elif "matemático" in p_lower or "113" in p_lower:
-                return obtener_link_archivo_drive(f"113_{tipo_doc}"), False
-            elif "lógica" in p_lower or "114" in p_lower:
-                return obtener_link_archivo_drive(f"114_{tipo_doc}"), False
 
     # Plan de estudios y carrera
     if "plan de estudios" in p_lower or "ver el plan" in p_lower or "duración" in p_lower or "validez" in p_lower:
         return obtener_link_archivo_drive("plan"), False
 
-    # --- 2. BASE DE CONOCIMIENTO INSTITUCIONAL ---
+    # --- 2. BASE DE CONOCIMIENTO (Para preguntas escritas libremente por teclado) ---
     base_conocimiento = {
         "curso de ingreso": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
         "familiarización": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
@@ -118,9 +100,10 @@ def buscar_en_pdf_rag(pregunta: str):
         "diferencia": "Las consultas académicas (contenidos, bibliografía, notas) se resuelven con profesores o tutores. Las cuestiones administrativas (certificados, pases, analíticos, SIU Guaraní) se canalizan exclusivamente con Bedelía."
     }
 
+    # Evaluamos si alguna de las palabras clave de las preguntas escritas coincide con el mensaje del usuario
     for clave, respuesta in base_conocimiento.items():
         if clave in p_lower:
             return respuesta, False
 
-    # --- 3. DERIVACIÓN FINAL ---
+    # --- 3. DERIVACIÓN FINAL SI NINGUNA CONDICIÓN COINCIDE ---
     return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True

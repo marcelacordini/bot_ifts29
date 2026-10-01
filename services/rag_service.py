@@ -11,7 +11,7 @@ CREDENTIALS_FILE = 'credentials.json'
 FOLDER_ID = '11kZr6lwqHUzofr37mTd-noucxwunmIr8'
 
 def conectar_drive():
-    """Conecta con la API de Google Drive usando credenciales locales o de entorno."""
+    """Conecta con la API de Google Drive."""
     try:
         if os.environ.get("GOOGLE_CREDENTIALS_JSON"):
             creds_dict = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON"))
@@ -25,15 +25,62 @@ def conectar_drive():
         print(f"Error al conectar con Google Drive: {e}")
         return None
 
+def buscar_en_pdf_oficial(pregunta: str):
+    """Busca específicamente dentro de Informacion_Oficial_IFTS29.pdf usando RAG."""
+    service = conectar_drive()
+    if not service:
+        return None
+
+    try:
+        query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
+        results = service.files().list(q=query, pageSize=40, fields="files(id, name, webViewLink)").execute()
+        files = results.get('files', [])
+
+        archivo_objetivo = None
+        for file in files:
+            if "informacion_oficial" in file['name'].lower() or "ifts29" in file['name'].lower():
+                archivo_objetivo = file
+                break
+
+        if not archivo_objetivo:
+            return None
+
+        # Descargar y leer el PDF oficial
+        request = service.files().get_media(fileId=archivo_objetivo['id'])
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        fh.seek(0)
+
+        reader = PdfReader(fh)
+        p_lower = pregunta.lower()
+        palabras_clave = [p for p in p_lower.split() if len(p) > 3]
+
+        for page in reader.pages:
+            texto = page.extract_text()
+            if texto:
+                texto_lower = texto.lower()
+                # Coincidencia si contiene palabras clave importantes de la pregunta manual
+                if any(palabra in texto_lower for palabra in palabras_clave):
+                    # Extraer un fragmento relevante alrededor de la coincidencia
+                    return f"📖 **Información encontrada en el documento oficial:**\n\n<em>{texto[:400]}...</em>", False
+
+        return None
+    except Exception as e:
+        print(f"Error buscando en PDF oficial: {e}")
+        return None
+
 def obtener_link_archivo_drive(nombre_buscado: str):
-    """Busca un archivo específico en Drive y devuelve su botón HTML con link."""
+    """Busca un archivo específico (programas, cronogramas, plan) y devuelve su botón HTML."""
     service = conectar_drive()
     if not service:
         return "No se pudo conectar con Google Drive para recuperar el documento."
     
     try:
         query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
-        results = service.files().list(q=query, pageSize=30, fields="files(id, name, webViewLink)").execute()
+        results = service.files().list(q=query, pageSize=40, fields="files(id, name, webViewLink)").execute()
         files = results.get('files', [])
 
         for file in files:
@@ -49,64 +96,6 @@ def obtener_link_archivo_drive(nombre_buscado: str):
                     </a>
                 </div>
                 """
-        return "No se encontró el documento exacto en la carpeta oficial de Drive."
+        return f"No se encontró el documento oficial ({nombre_buscado}) en la carpeta de Drive."
     except Exception as e:
         return f"Error al buscar el archivo: {e}"
-
-def buscar_en_pdf_rag(pregunta: str):
-    """Busca respuestas dentro del contenido de los PDFs o retorna un documento específico."""
-    p_lower = pregunta.lower()
-
-    # 1. CASOS QUE REQUIEREN ABRIR UN PDF ESPECÍFICO
-    if "plan de estudios" in p_lower or "ver el plan" in p_lower or "correlatividades" in p_lower:
-        return obtener_link_archivo_drive("plan"), False
-
-    if "programa" in p_lower:
-        return obtener_link_archivo_drive("programa"), False
-
-    if "cronograma" in p_lower:
-        return obtener_link_archivo_drive("cronograma"), False
-
-    if "documentación" in p_lower or "ingresantes" in p_lower:
-        return obtener_link_archivo_drive("documentacion"), False
-
-    # 2. CASOS QUE RESPONDEN CON INFORMACIÓN TEXTUAL (Búsqueda en RAG)
-    service = conectar_drive()
-    if not service:
-        return "No se pudo conectar con el repositorio documental.", True
-
-    try:
-        query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
-        results = service.files().list(q=query, pageSize=15, fields="files(id, name)").execute()
-        files = results.get('files', [])
-
-        corpus_texto = ""
-        for file in files:
-            request = service.files().get_media(fileId=file['id'])
-            fh = io.BytesIO()
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while not done:
-                _, done = downloader.next_chunk()
-            fh.seek(0)
-            reader = PdfReader(fh)
-            for page in reader.pages:
-                txt = page.extract_text()
-                if txt:
-                    corpus_texto += txt + "\n"
-
-        # Búsqueda simple de palabras clave dentro de los textos extraídos de los PDFs
-        if "asistencia" in p_lower or "faltas" in p_lower or "regular" in p_lower:
-            return "📋 **Condición de Alumno Regular y Asistencia:** Se requiere un mínimo de 75% de asistencia a las clases sincrónicas y aprobación de instancias evaluativas según el régimen académico oficial.", False
-
-        if "siu guaraní" in p_lower or "certificado" in p_lower or "inscripción" in p_lower:
-            return "🏛️ **SIU Guaraní y Trámites:** Los certificados de alumno regular y las inscripciones a materias/exámenes se gestionan directamente a través de la plataforma SIU Guaraní en las fechas del calendario académico.", False
-
-        if "ayuda técnica" in p_lower or "pc" in p_lower or "celular" in p_lower or "conexión" in p_lower:
-            return "🛠️ **Soporte Técnico:** Para cursar se recomienda PC o notebook con navegador actualizado y conexión estable. Ante problemas en exámenes, contactá de inmediato a soporte por el aula virtual.", False
-
-        return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True
-
-    except Exception as e:
-        print(f"Error en RAG: {e}")
-        return "Ocurrió un inconveniente al procesar los archivos de la institución.", True

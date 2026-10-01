@@ -51,15 +51,15 @@ def obtener_link_archivo_drive(nombre_buscado: str):
         return f"Error al buscar el archivo: {e}"
 
 def buscar_en_pdf_rag(pregunta: str):
-    """Maneja la entrega de archivos oficiales y base de conocimiento institucional."""
+    """Maneja la entrega de archivos oficiales cruzando materia y tipo de documento."""
     p_lower = pregunta.lower()
 
-    # --- 1. DETECCIÓN DE MATERIAS Y DOCUMENTOS ESPECÍFICOS (Códigos 111 a 114) ---
+    # --- 1. DETECTAR MATERIA Y DOCUMENTO (Programa o Cronograma) ---
     codigos_materias = {
-        "técnicas de programación": "111", "programacion": "111",
-        "administración de base de datos": "112", "base de datos": "112",
-        "elementos de análisis matemático": "113", "matemático": "113",
-        "lógica computacional": "114", "lógica": "114"
+        "técnicas de programación": "111", "programacion": "111", "111": "111",
+        "administración de base de datos": "112", "base de datos": "112", "112": "112",
+        "elementos de análisis matemático": "113", "matemático": "113", "113": "113",
+        "lógica computacional": "114", "lógica": "114", "114": "114"
     }
 
     codigo_detectado = None
@@ -68,17 +68,29 @@ def buscar_en_pdf_rag(pregunta: str):
             codigo_detectado = codigo
             break
 
-    if codigo_detectado:
-        if "programa" in p_lower:
-            return obtener_link_archivo_drive(f"{codigo_detectado}_Programa"), False
-        if "cronograma" in p_lower or "horarios" in p_lower or "días" in p_lower:
-            return obtener_link_archivo_drive(f"{codigo_detectado}_Cronograma"), False
+    # Si se pide programa o cronograma Y detectamos una materia (o el usuario viene interactuando)
+    if "programa" in p_lower or "cronograma" in p_lower or "horarios" in p_lower or "días" in p_lower:
+        # Si no detectó la materia explícitamente en el último mensaje, podemos buscar por palabra clave general en Drive
+        tipo_doc = "Programa" if "programa" in p_lower else "Cronograma"
+        
+        if codigo_detectado:
+            return obtener_link_archivo_drive(f"{codigo_detectado}_{tipo_doc}"), False
+        else:
+            # Búsqueda comodín si el mensaje anterior era de materia pero el actual solo pide el cronograma
+            if "base de datos" in p_lower or "112" in p_lower:
+                return obtener_link_archivo_drive(f"112_{tipo_doc}"), False
+            elif "programación" in p_lower or "111" in p_lower:
+                return obtener_link_archivo_drive(f"111_{tipo_doc}"), False
+            elif "matemático" in p_lower or "113" in p_lower:
+                return obtener_link_archivo_drive(f"113_{tipo_doc}"), False
+            elif "lógica" in p_lower or "114" in p_lower:
+                return obtener_link_archivo_drive(f"114_{tipo_doc}"), False
 
     # Plan de estudios y carrera
     if "plan de estudios" in p_lower or "ver el plan" in p_lower or "duración" in p_lower or "validez" in p_lower:
         return obtener_link_archivo_drive("plan"), False
 
-    # --- 2. BASE DE CONOCIMIENTO INSTITUCIONAL (Respuestas limpias y directas) ---
+    # --- 2. BASE DE CONOCIMIENTO INSTITUCIONAL ---
     base_conocimiento = {
         "curso de ingreso": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
         "familiarización": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
@@ -101,10 +113,9 @@ def buscar_en_pdf_rag(pregunta: str):
         "diferencia": "Las consultas académicas (contenidos, bibliografía, notas) se resuelven con profesores o tutores. Las cuestiones administrativas (certificados, pases, analíticos, SIU Guaraní) se canalizan exclusivamente con Bedelía."
     }
 
-    # Buscamos coincidencias directas en las palabras clave
     for clave, respuesta in base_conocimiento.items():
         if clave in p_lower:
             return respuesta, False
 
-    # --- 3. DERIVACIÓN FINAL SI NO SE ENCUENTRA NADA ---
+    # --- 3. DERIVACIÓN FINAL ---
     return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True

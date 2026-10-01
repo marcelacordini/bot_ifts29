@@ -25,11 +25,39 @@ def conectar_drive():
         print(f"Error al conectar con Google Drive: {e}")
         return None
 
+def obtener_link_archivo_drive(nombre_buscado: str):
+    """Busca un archivo específico en Drive y devuelve su botón HTML."""
+    service = conectar_drive()
+    if not service:
+        return "No se pudo conectar con Google Drive para recuperar el documento."
+    
+    try:
+        query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
+        results = service.files().list(q=query, pageSize=50, fields="files(id, name, webViewLink)").execute()
+        files = results.get('files', [])
+
+        for file in files:
+            if nombre_buscado.lower() in file['name'].lower():
+                link = file.get('webViewLink', '#')
+                nombre = file['name']
+                return f"""
+                <div style="background-color: #f0f4f8; border-left: 4px solid #00a896; padding: 12px; border-radius: 6px; margin: 8px 0;">
+                    <p style="margin: 0 0 6px 0; font-weight: bold; color: #0f2942;">📄 Documento Oficial Disponible</p>
+                    <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #334155;">{nombre}</p>
+                    <a href="{link}" target="_blank" style="background-color: #00a896; color: white; padding: 8px 14px; text-decoration: none; border-radius: 4px; font-size: 0.9em; display: inline-block; font-weight: 500;">
+                        📥 Ver / Descargar PDF
+                    </a>
+                </div>
+                """
+        return f"No se encontró el documento oficial ({nombre_buscado}) en la carpeta de Drive."
+    except Exception as e:
+        return f"Error al buscar el archivo: {e}"
+
 def buscar_en_pdf_rag(pregunta: str):
-    """Busca en el PDF oficial o archivos de Drive antes de derivar."""
+    """Gestiona la entrega de archivos oficiales y la búsqueda limpia por RAG."""
     p_lower = pregunta.lower()
 
-    # Mapeo de materias para programas y cronogramas
+    # --- 1. DETECCIÓN DE MATERIAS Y DOCUMENTOS ESPECÍFICOS (Códigos 111 a 114) ---
     codigos_materias = {
         "técnicas de programación": "111", "programacion": "111",
         "administración de base de datos": "112", "base de datos": "112",
@@ -49,13 +77,14 @@ def buscar_en_pdf_rag(pregunta: str):
         if "cronograma" in p_lower or "horarios" in p_lower or "días" in p_lower:
             return obtener_link_archivo_drive(f"{codigo_detectado}_Cronograma"), False
 
-    if "plan de estudios" in p_lower or "ver el plan" in p_lower:
+    # Plan de estudios y carrera
+    if "plan de estudios" in p_lower or "ver el plan" in p_lower or "duración" in p_lower or "validez" in p_lower:
         return obtener_link_archivo_drive("plan"), False
 
-    # Búsqueda general en archivos de Drive
+    # --- 2. BÚSQUEDA RAG LIMPIA EN ARCHIVOS DE DRIVE ---
     service = conectar_drive()
     if not service:
-        return "No se pudo conectar con el repositorio documental de Drive. ¿Deseas contactar a Bedelía o Tutoría?", True
+        return "No se pudo conectar con el repositorio documental. ¿Deseas contactar a Bedelía o Tutoría?", True
 
     try:
         query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
@@ -74,39 +103,19 @@ def buscar_en_pdf_rag(pregunta: str):
             reader = PdfReader(fh)
             for page in reader.pages:
                 txt = page.extract_text()
-                if txt and any(p in txt.lower() for p in p_lower.split() if len(p) > 3):
-                    return f"📖 **Información encontrada en documentos oficiales ({file['name']}):**<br><em>...{txt[:350]}...</em>", False
+                if txt:
+                    lineas = txt.split('\n')
+                    for i, linea in enumerate(lineas):
+                        # Si encuentra una coincidencia relevante con la pregunta ingresada
+                        if any(p in linea.lower() for p in p_lower.split() if len(p) > 3):
+                            # Tomamos exclusivamente el bloque de texto limpio de la respuesta
+                            bloque_respuesta = " ".join([l.strip() for l in lineas[max(0, i):min(len(lineas), i+3)] if l.strip()])
+                            if len(bloque_respuesta) > 20:
+                                return f"📖 {bloque_respuesta}", False
 
+        # --- 3. DERIVACIÓN FINAL SI NO SE ENCUENTRA NADA ---
         return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True
 
     except Exception as e:
         print(f"Error en RAG: {e}")
         return "Ocurrió un inconveniente al procesar los archivos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True
-
-def obtener_link_archivo_drive(nombre_buscado: str):
-    """Busca un archivo específico y devuelve su botón HTML."""
-    service = conectar_drive()
-    if not service:
-        return "No se pudo conectar con Google Drive para recuperar el documento."
-    
-    try:
-        query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
-        results = service.files().list(q=query, pageSize=40, fields="files(id, name, webViewLink)").execute()
-        files = results.get('files', [])
-
-        for file in files:
-            if nombre_buscado.lower() in file['name'].lower():
-                link = file.get('webViewLink', '#')
-                nombre = file['name']
-                return f"""
-                <div style="background-color: #f0f4f8; border-left: 4px solid #00a896; padding: 12px; border-radius: 6px; margin: 8px 0;">
-                    <p style="margin: 0 0 6px 0; font-weight: bold; color: #0f2942;">📄 Documento Oficial Disponible</p>
-                    <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #334155;">{nombre}</p>
-                    <a href="{link}" target="_blank" style="background-color: #00a896; color: white; padding: 8px 14px; text-decoration: none; border-radius: 4px; font-size: 0.9em; display: inline-block; font-weight: 500;">
-                        📥 Ver / Descargar PDF
-                    </a>
-                </div>
-                """
-        return f"No se encontró el documento oficial ({nombre_buscado}) en la carpeta de Drive."
-    except Exception as e:
-        return f"Error al buscar el archivo: {e}"

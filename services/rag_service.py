@@ -25,55 +25,66 @@ def conectar_drive():
         print(f"Error al conectar con Google Drive: {e}")
         return None
 
-def buscar_en_pdf_oficial(pregunta: str):
-    """Busca específicamente dentro de Informacion_Oficial_IFTS29.pdf usando RAG."""
+def buscar_en_pdf_rag(pregunta: str):
+    """Busca en el PDF oficial o archivos de Drive antes de derivar."""
+    p_lower = pregunta.lower()
+
+    # Mapeo de materias para programas y cronogramas
+    codigos_materias = {
+        "técnicas de programación": "111", "programacion": "111",
+        "administración de base de datos": "112", "base de datos": "112",
+        "elementos de análisis matemático": "113", "matemático": "113",
+        "lógica computacional": "114", "lógica": "114"
+    }
+
+    codigo_detectado = None
+    for nombre_mat, codigo in codigos_materias.items():
+        if nombre_mat in p_lower:
+            codigo_detectado = codigo
+            break
+
+    if codigo_detectado:
+        if "programa" in p_lower:
+            return obtener_link_archivo_drive(f"{codigo_detectado}_Programa"), False
+        if "cronograma" in p_lower or "horarios" in p_lower or "días" in p_lower:
+            return obtener_link_archivo_drive(f"{codigo_detectado}_Cronograma"), False
+
+    if "plan de estudios" in p_lower or "ver el plan" in p_lower:
+        return obtener_link_archivo_drive("plan"), False
+
+    # Búsqueda general en archivos de Drive
     service = conectar_drive()
     if not service:
-        return None
+        return "No se pudo conectar con el repositorio documental de Drive. ¿Deseas contactar a Bedelía o Tutoría?", True
 
     try:
         query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
-        results = service.files().list(q=query, pageSize=40, fields="files(id, name, webViewLink)").execute()
+        results = service.files().list(q=query, pageSize=30, fields="files(id, name)").execute()
         files = results.get('files', [])
 
-        archivo_objetivo = None
         for file in files:
-            if "informacion_oficial" in file['name'].lower() or "ifts29" in file['name'].lower():
-                archivo_objetivo = file
-                break
+            request = service.files().get_media(fileId=file['id'])
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            fh.seek(0)
+            
+            reader = PdfReader(fh)
+            for page in reader.pages:
+                txt = page.extract_text()
+                if txt and any(p in txt.lower() for p in p_lower.split() if len(p) > 3):
+                    return f"📖 **Información encontrada en documentos oficiales ({file['name']}):**<br><em>...{txt[:350]}...</em>", False
 
-        if not archivo_objetivo:
-            return None
+        return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True
 
-        # Descargar y leer el PDF oficial
-        request = service.files().get_media(fileId=archivo_objetivo['id'])
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-        fh.seek(0)
-
-        reader = PdfReader(fh)
-        p_lower = pregunta.lower()
-        palabras_clave = [p for p in p_lower.split() if len(p) > 3]
-
-        for page in reader.pages:
-            texto = page.extract_text()
-            if texto:
-                texto_lower = texto.lower()
-                # Coincidencia si contiene palabras clave importantes de la pregunta manual
-                if any(palabra in texto_lower for palabra in palabras_clave):
-                    # Extraer un fragmento relevante alrededor de la coincidencia
-                    return f"📖 **Información encontrada en el documento oficial:**\n\n<em>{texto[:400]}...</em>", False
-
-        return None
     except Exception as e:
-        print(f"Error buscando en PDF oficial: {e}")
-        return None
+        print(f"Error en RAG: {e}")
+        return "Ocurrió un inconveniente al procesar los archivos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True
 
 def obtener_link_archivo_drive(nombre_buscado: str):
-    """Busca un archivo específico (programas, cronogramas, plan) y devuelve su botón HTML."""
+    """Busca un archivo específico y devuelve su botón HTML."""
     service = conectar_drive()
     if not service:
         return "No se pudo conectar con Google Drive para recuperar el documento."

@@ -54,7 +54,7 @@ def obtener_link_archivo_drive(nombre_buscado: str):
         return f"Error al buscar el archivo: {e}"
 
 def buscar_en_pdf_rag(pregunta: str):
-    """Gestiona la entrega de archivos oficiales y la búsqueda limpia por RAG."""
+    """Gestiona la entrega de archivos oficiales y la búsqueda limpia por RAG basada en etiquetas 'Respuesta:'."""
     p_lower = pregunta.lower()
 
     # --- 1. DETECCIÓN DE MATERIAS Y DOCUMENTOS ESPECÍFICOS (Códigos 111 a 114) ---
@@ -81,13 +81,13 @@ def buscar_en_pdf_rag(pregunta: str):
     if "plan de estudios" in p_lower or "ver el plan" in p_lower or "duración" in p_lower or "validez" in p_lower:
         return obtener_link_archivo_drive("plan"), False
 
-    # --- 2. BÚSQUEDA RAG LIMPIA EN ARCHIVOS DE DRIVE ---
+    # --- 2. BÚSQUEDA RAG EXACTA TRAS LA ETIQUETA "Respuesta:" ---
     service = conectar_drive()
     if not service:
         return "No se pudo conectar con el repositorio documental. ¿Deseas contactar a Bedelía o Tutoría?", True
 
     try:
-        query = f"'{FOLDER_ID}' in parents and mimeType='application/pdf' and trashed=false"
+        query = f"'{FOLDER_ID}' in parents and trashed=false"
         results = service.files().list(q=query, pageSize=30, fields="files(id, name)").execute()
         files = results.get('files', [])
 
@@ -100,18 +100,20 @@ def buscar_en_pdf_rag(pregunta: str):
                 _, done = downloader.next_chunk()
             fh.seek(0)
             
-            reader = PdfReader(fh)
-            for page in reader.pages:
-                txt = page.extract_text()
-                if txt:
-                    lineas = txt.split('\n')
-                    for i, linea in enumerate(lineas):
-                        # Si encuentra una coincidencia relevante con la pregunta ingresada
-                        if any(p in linea.lower() for p in p_lower.split() if len(p) > 3):
-                            # Tomamos exclusivamente el bloque de texto limpio de la respuesta
-                            bloque_respuesta = " ".join([l.strip() for l in lineas[max(0, i):min(len(lineas), i+3)] if l.strip()])
-                            if len(bloque_respuesta) > 20:
-                                return f"📖 {bloque_respuesta}", False
+            # Leemos el contenido como texto (soporta .md y archivos de texto)
+            contenido = fh.read().decode('utf-8', errors='ignore')
+            lineas = contenido.split('\n')
+            
+            for i, linea in enumerate(lineas):
+                # Verificamos si la línea contiene palabras clave de la pregunta del usuario
+                if any(p in linea.lower() for p in p_lower.split() if len(p) > 3):
+                    # Buscamos hacia adelante en las siguientes líneas la etiqueta "Respuesta:"
+                    for j in range(i, min(len(lineas), i + 6)):
+                        if "**respuesta:**" in lineas[j].lower() or "respueta:" in lineas[j].lower() or "respuesta:" in lineas[j].lower():
+                            # Extraemos el texto que viene después de los dos puntos
+                            partes = lineas[j].split(":", 1)
+                            if len(partes) > 1 and len(partes[1].strip()) > 5:
+                                return f"📖 {partes[1].strip()}", False
 
         # --- 3. DERIVACIÓN FINAL SI NO SE ENCUENTRA NADA ---
         return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True

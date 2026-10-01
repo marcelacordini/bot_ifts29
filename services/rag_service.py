@@ -23,7 +23,7 @@ def conectar_drive():
         return None
 
 def obtener_link_archivo_drive(nombre_buscado: str):
-    """Busca un archivo específico (programas, cronogramas, plan) y devuelve su botón HTML."""
+    """Busca un archivo específico en Drive de forma flexible y devuelve su botón HTML."""
     service = conectar_drive()
     if not service:
         return "No se pudo conectar con Google Drive para recuperar el documento."
@@ -33,8 +33,13 @@ def obtener_link_archivo_drive(nombre_buscado: str):
         results = service.files().list(q=query, pageSize=50, fields="files(id, name, webViewLink)").execute()
         files = results.get('files', [])
 
+        # Dividimos el término buscado (ej: "111_Cronograma" -> ["111", "cronograma"])
+        partes_busqueda = nombre_buscado.lower().split("_")
+
         for file in files:
-            if nombre_buscado.lower() in file['name'].lower():
+            nombre_archivo = file['name'].lower()
+            # Validamos que el archivo contenga todas las partes necesarias (ej: contenga '111' y 'cronograma')
+            if all(parte in nombre_archivo for parte in partes_busqueda):
                 link = file.get('webViewLink', '#')
                 nombre = file['name']
                 return f"""

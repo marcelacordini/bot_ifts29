@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+import os
 
 from services.rag_service import buscar_en_pdf_rag
 from services.safety import enmascarar_datos_personales
@@ -24,14 +26,24 @@ class ConsultaRequest(BaseModel):
     mensaje: str
     comision: str = "General"
 
-@app.get("/")
-def health_check():
-    return {
-        "status": "activo",
-        "empresa": "AppMinds",
-        "proyecto": "Asistente Virtual IFTS 29",
-        "arquitectura": "FastAPI / RAG modular"
-    }
+@app.get("/", response_class=HTMLResponse)
+def home():
+    """Sirve la interfaz gráfica del chat leyendo el index.html de forma segura."""
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(current_dir, "index.html")
+        
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"""
+        <html>
+            <body style="font-family: Arial; padding: 20px;">
+                <h3>⚠️ Error cargando la interfaz gráfica</h3>
+                <p>Detalle: {str(e)}</p>
+            </body>
+        </html>
+        """
 
 @app.post("/api/chat")
 def procesar_chat(request: ConsultaRequest):

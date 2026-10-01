@@ -1,10 +1,7 @@
 import os
-import io
 import json
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from googleapiclient.http import MediaIoBaseDownload
-from pypdf import PdfReader
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 CREDENTIALS_FILE = 'credentials.json'
@@ -26,7 +23,7 @@ def conectar_drive():
         return None
 
 def obtener_link_archivo_drive(nombre_buscado: str):
-    """Busca un archivo específico en Drive y devuelve su botón HTML."""
+    """Busca un archivo específico (programas, cronogramas, plan) y devuelve su botón HTML."""
     service = conectar_drive()
     if not service:
         return "No se pudo conectar con Google Drive para recuperar el documento."
@@ -54,7 +51,7 @@ def obtener_link_archivo_drive(nombre_buscado: str):
         return f"Error al buscar el archivo: {e}"
 
 def buscar_en_pdf_rag(pregunta: str):
-    """Gestiona la entrega de archivos oficiales y la búsqueda limpia por RAG basada en etiquetas 'Respuesta:'."""
+    """Maneja la entrega de archivos oficiales y base de conocimiento institucional."""
     p_lower = pregunta.lower()
 
     # --- 1. DETECCIÓN DE MATERIAS Y DOCUMENTOS ESPECÍFICOS (Códigos 111 a 114) ---
@@ -81,43 +78,33 @@ def buscar_en_pdf_rag(pregunta: str):
     if "plan de estudios" in p_lower or "ver el plan" in p_lower or "duración" in p_lower or "validez" in p_lower:
         return obtener_link_archivo_drive("plan"), False
 
-    # --- 2. BÚSQUEDA RAG EXACTA TRAS LA ETIQUETA "Respuesta:" ---
-    service = conectar_drive()
-    if not service:
-        return "No se pudo conectar con el repositorio documental. ¿Deseas contactar a Bedelía o Tutoría?", True
+    # --- 2. BASE DE CONOCIMIENTO INSTITUCIONAL (Respuestas limpias y directas) ---
+    base_conocimiento = {
+        "curso de ingreso": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
+        "familiarización": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales de la tecnicatura a distancia.",
+        "campus": "En la plataforma Moodle encontrarás el aula principal asignada a tu comisión. Cada semana se habilitan los módulos correspondientes con materiales de lectura obligatoria, foros de intercambio académico y actividades evaluables.",
+        "moodle": "En la plataforma Moodle encontrarás el aula principal asignada a tu comisión. Cada semana se habilitan los módulos correspondientes con materiales de lectura obligatoria, foros de intercambio académico y actividades evaluables.",
+        "materiales": "Disponés de guías de lectura rápida, tutoriales de acceso y el programa introductorio en la sección del 'Curso de Familiarización y Primeros Pasos' dentro de tu aula virtual.",
+        "docentes": "Podés establecer contacto con el equipo docente a través de la mensajería interna del campus Moodle o utilizando los foros de consultas generales habilitados en cada materia.",
+        "comisión": "Para conocer tu comisión, ingresá a la sección de tu perfil en el campus Moodle o consultá el padrón oficial de ingresantes publicado en la cartelera digital institucional.",
+        "asistencia": "La tecnicatura a distancia exige un mínimo del 75% de participación y asistencia a las actividades sincrónicas obligatorias y la aprobación de las entregas de trabajos prácticos.",
+        "faltas": "Las inasistencias a instancias obligatorias deben justificarse formalmente presentando certificado médico o laboral ante Bedelía dentro de las 48 horas hábiles posteriores al hecho.",
+        "actividades pendientes": "Las entregas fuera de término deben coordinarse directamente con el docente a cargo de la comisión y están sujetas al régimen de evaluación y plazos establecidos en la materia.",
+        "alumno regular": "Se mantiene cumpliendo con el porcentaje mínimo de asistencia, aprobando los trabajos prácticos obligatorios y rindiendo las instancias parciales o coloquios en las fechas del calendario académico.",
+        "correlatividades": "Para cursar las asignaturas de segundo año es requisito obligatorio haber regularizado las correlativas de primer año; y para rendir los exámenes finales, se debe tener la materia aprobada según el plan de estudios vigente.",
+        "certificado": "El certificado se solicita de manera digital ingresando a la plataforma SIU Guaraní en la sección 'Trámites > Certificados', el cual se emite automáticamente con firma digital válida.",
+        "inscripción": "Todas las inscripciones a materias, promociones y mesas de exámenes finales se gestionan exclusivamente a través del sistema SIU Guaraní dentro de los plazos del calendario académico.",
+        "datos personales": "La modificación de datos de contacto se realiza ingresando a la configuración de tu perfil en SIU Guaraní o enviando una solicitud formal al área de Bedelía.",
+        "calendario": "El cronograma completo con fechas de inicio de cuatrimestre, periodos de inscripción, recesos y mesas de exámenes está publicado en la sección de normativas de la web institucional.",
+        "requisitos": "Se recomienda contar con una computadora (PC o notebook) con sistema operativo actualizado, navegador web moderno y una conexión a internet estable. Para las prácticas de programación se indicarán los entornos específicos en cada materia.",
+        "problemas de conexión": "Si experimentás inconvenientes técnicos durante una evaluación sincrónica, debés tomar una captura de pantalla como evidencia (con fecha y hora) y reportarlo de inmediato a soporte técnico y a tu docente por correo.",
+        "diferencia": "Las consultas académicas (contenidos, bibliografía, notas) se resuelven con profesores o tutores. Las cuestiones administrativas (certificados, pases, analíticos, SIU Guaraní) se canalizan exclusivamente con Bedelía."
+    }
 
-    try:
-        query = f"'{FOLDER_ID}' in parents and trashed=false"
-        results = service.files().list(q=query, pageSize=30, fields="files(id, name)").execute()
-        files = results.get('files', [])
+    # Buscamos coincidencias directas en las palabras clave
+    for clave, respuesta in base_conocimiento.items():
+        if clave in p_lower:
+            return respuesta, False
 
-        for file in files:
-            request = service.files().get_media(fileId=file['id'])
-            fh = io.BytesIO()
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while not done:
-                _, done = downloader.next_chunk()
-            fh.seek(0)
-            
-            # Leemos el contenido como texto (soporta .md y archivos de texto)
-            contenido = fh.read().decode('utf-8', errors='ignore')
-            lineas = contenido.split('\n')
-            
-            for i, linea in enumerate(lineas):
-                # Verificamos si la línea contiene palabras clave de la pregunta del usuario
-                if any(p in linea.lower() for p in p_lower.split() if len(p) > 3):
-                    # Buscamos hacia adelante en las siguientes líneas la etiqueta "Respuesta:"
-                    for j in range(i, min(len(lineas), i + 6)):
-                        if "**respuesta:**" in lineas[j].lower() or "respueta:" in lineas[j].lower() or "respuesta:" in lineas[j].lower():
-                            # Extraemos el texto que viene después de los dos puntos
-                            partes = lineas[j].split(":", 1)
-                            if len(partes) > 1 and len(partes[1].strip()) > 5:
-                                return f"📖 {partes[1].strip()}", False
-
-        # --- 3. DERIVACIÓN FINAL SI NO SE ENCUENTRA NADA ---
-        return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True
-
-    except Exception as e:
-        print(f"Error en RAG: {e}")
-        return "Ocurrió un inconveniente al procesar los archivos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True
+    # --- 3. DERIVACIÓN FINAL SI NO SE ENCUENTRA NADA ---
+    return "No encontré una respuesta exacta en los documentos institucionales. ¿Deseas contactar a Bedelía o Tutoría?", True

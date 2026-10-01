@@ -80,10 +80,17 @@ def buscar_en_pdf_rag(pregunta: str):
     # --- 2. BASE DE CONOCIMIENTO AMPLIADA (Cubre todos los temas y sinónimos) ---
     base_conocimiento = {
         # Materias y Plan
-        "materias": "Las materias de primer año de la tecnicatura son: Administración de Base de Datos (1.1.2), Técnicas de Programación (1.1.1), Elementos de Análisis Matemático (1.1.3) y Lógica Computacional (1.1.4).",
-        "asignaturas": "Las materias de primer año de la tecnicatura son: Administración de Base de Datos (1.1.2), Técnicas de Programación (1.1.1), Elementos de Análisis Matemático (1.1.3) y Lógica Computacional (1.1.4).",
+        "materia": "Las materias de primer año de la tecnicatura son: Administración de Base de Datos (1.1.2), Técnicas de Programación (1.1.1), Elementos de Análisis Matemático (1.1.3) y Lógica Computacional (1.1.4). Podés consultar el detalle completo desde la opción 'Plan de estudios y carrera'.",
+        "materias": "Las materias de primer año de la tecnicatura son: Administración de Base de Datos (1.1.2), Técnicas de Programación (1.1.1), Elementos de Análisis Matemático (1.1.3) y Lógica Computacional (1.1.4). Podés consultar el detalle completo desde la opción 'Plan de estudios y carrera'.",
+        "asignaturas": "Las materias de primer año de la tecnicatura son: Administración de Base de Datos (1.1.2), Técnicas de Programación (1.1.1), Elementos de Análisis Matemático (1.1.3) y Lógica Computacional (1.1.4). Podés consultar el detalle completo desde la opción 'Plan de estudios y carrera'.",
         "correlatividades": "Para cursar las asignaturas de segundo año es requisito obligatorio haber regularizado las correlativas de primer año; y para rendir los exámenes finales, se debe tener la materia aprobada según el plan de estudios vigente.",
         
+        # Horarios y Cursada
+        "horario": "Las actividades sincrónicas de primer año se desarrollan habitualmente de lunes a jueves en el turno noche (de 19:00 a 21:00 hs), según la comisión y materia asignada. Podés descargar el cronograma detallado desde el menú de tu cursada.",
+        "horarios": "Las actividades sincrónicas de primer año se desarrollan habitualmente de lunes a jueves en el turno noche (de 19:00 a 21:00 hs), según la comisión y materia asignada. Podés descargar el cronograma detallado desde el menú de tu cursada.",
+        "días": "Las actividades sincrónicas de primer año se desarrollan habitualmente de lunes a jueves en el turno noche (de 19:00 a 21:00 hs), según la comisión y materia asignada.",
+        "clases": "Los enlaces de acceso a las clases en vivo y las grabaciones oficiales quedan alojados de manera permanente en la sección de avisos y clases sincrónicas de cada aula virtual en Moodle.",
+
         # Primeros pasos y Moodle
         "curso de ingreso": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus, los cronogramas de cursada y las pautas generales.",
         "familiarización": "El curso de ingreso y ambientación es un espacio obligatorio de carácter sincrónico y asincrónico diseñado para que los ingresantes conozcan las herramientas digitales del campus y los cronogramas de cursada.",
@@ -109,7 +116,6 @@ def buscar_en_pdf_rag(pregunta: str):
         
         # Trámites y SIU Guaraní
         "certificado": "El certificado de alumno regular se solicita de manera digital ingresando a la plataforma SIU Guaraní en la sección 'Trámites > Certificados', el cual se emite automáticamente con firma digital válida.",
-        "alumno regular": "El certificado de alumno regular se solicita de manera digital ingresando a la plataforma SIU Guaraní en la sección 'Trámites > Certificados', el cual se emite automáticamente con firma digital válida.",
         "inscripción": "Todas las inscripciones a materias, promociones y mesas de exámenes finales se gestionan exclusivamente a través del sistema SIU Guaraní dentro de los plazos del calendario académico.",
         "inscribirme": "Todas las inscripciones a materias, promociones y mesas de exámenes finales se gestionan exclusivamente a través del sistema SIU Guaraní dentro de los plazos del calendario académico.",
         "datos personales": "La modificación de datos de contacto o correo electrónico se realiza ingresando a la configuración de tu perfil en SIU Guaraní o enviando una solicitud formal al área de Bedelía.",

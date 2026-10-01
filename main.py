@@ -11,7 +11,7 @@ from services.db_service import registrar_consulta_anonima
 app = FastAPI(
     title="AppMinds API",
     description="Backend del Asistente Virtual para Ingresantes del IFTS N.° 29",
-    version="3.1"
+    version="3.2"
 )
 
 app.add_middleware(
@@ -25,6 +25,9 @@ app.add_middleware(
 class ConsultaRequest(BaseModel):
     mensaje: str
     comision: str = "General"
+
+# Memoria temporal para recordar la última materia seleccionada independientemente de la comisión
+estado_sesion = {"ultima_materia": "112"}
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -71,7 +74,7 @@ def procesar_chat(request: ConsultaRequest):
                 "derivacion": False
             }
 
-        # Submenú 2: Mi cursada
+        # Submenú 2: Mi cursada - Paso A (Guardamos la materia elegida)
         if "2. mi cursada" in mensaje_lower or "mi cursada" in mensaje_lower or "horarios y clases" in mensaje_lower:
             return {
                 "respuesta": "📖 **Paso A:** ¿De qué materia necesitás información?",
@@ -79,7 +82,29 @@ def procesar_chat(request: ConsultaRequest):
                 "derivacion": False
             }
 
-        if any(m in mensaje_lower for m in ["base de datos", "programación", "lógica", "matemático"]):
+        if "base de datos" in mensaje_lower or "administración de base de datos" in mensaje_lower:
+            estado_sesion["ultima_materia"] = "112"
+            return {
+                "respuesta": "👥 **Paso B:** ¿En qué comisión estás?",
+                "opciones": ["Comisión A", "Comisión B", "Comisión C", "Comisión D", "Comisión E", "Comisión F", "No sé mi comisión", "Volver al menú principal"],
+                "derivacion": False
+            }
+        elif "programación" in mensaje_lower or "técnicas de programación" in mensaje_lower:
+            estado_sesion["ultima_materia"] = "111"
+            return {
+                "respuesta": "👥 **Paso B:** ¿En qué comisión estás?",
+                "opciones": ["Comisión A", "Comisión B", "Comisión C", "Comisión D", "Comisión E", "Comisión F", "No sé mi comisión", "Volver al menú principal"],
+                "derivacion": False
+            }
+        elif "matemático" in mensaje_lower or "elementos de análisis matemático" in mensaje_lower:
+            estado_sesion["ultima_materia"] = "113"
+            return {
+                "respuesta": "👥 **Paso B:** ¿En qué comisión estás?",
+                "opciones": ["Comisión A", "Comisión B", "Comisión C", "Comisión D", "Comisión E", "Comisión F", "No sé mi comisión", "Volver al menú principal"],
+                "derivacion": False
+            }
+        elif "lógica" in mensaje_lower or "lógica computacional" in mensaje_lower:
+            estado_sesion["ultima_materia"] = "114"
             return {
                 "respuesta": "👥 **Paso B:** ¿En qué comisión estás?",
                 "opciones": ["Comisión A", "Comisión B", "Comisión C", "Comisión D", "Comisión E", "Comisión F", "No sé mi comisión", "Volver al menú principal"],
@@ -112,13 +137,18 @@ def procesar_chat(request: ConsultaRequest):
         # Submenú 6: Ayuda técnica
         if "6. ayuda técnica" in mensaje_lower or "ayuda tecnica" in mensaje_lower:
             return {
-                "respuesta": "🛠️️ **Ayuda técnica:** Seleccioná tu consulta:",
+                "respuesta": "🛠 **Ayuda técnica:** Seleccioná tu consulta:",
                 "opciones": ["Requisitos de PC o celular para cursar", "Problemas de conexión en exámenes", "Diferencia entre consulta académica y administrativa", "Volver al menú principal"],
                 "derivacion": False
             }
 
+        # Si pide descargar cronograma o programa, inyectamos la última materia guardada en la consulta
+        consulta_a_procesar = mensaje_lower
+        if "cronograma" in mensaje_lower or "programa" in mensaje_lower:
+            consulta_a_procesar = f"{mensaje_lower} {estado_sesion['ultima_materia']}"
+
         # Búsqueda general por RAG o Drive
-        respuesta, derivacion = buscar_en_pdf_rag(mensaje_lower)
+        respuesta, derivacion = buscar_en_pdf_rag(consulta_a_procesar)
         opciones = ["Volver al menú principal"]
         if derivacion:
             opciones.append("Contactar a Bedelía o Tutoría")
